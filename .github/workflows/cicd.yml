@@ -7,7 +7,7 @@ on:
     branches: [ "main", "master", "develop" ]
 
 jobs:
-  tests:
+  backend-tests:
     runs-on: ubuntu-latest
 
     services:
@@ -31,7 +31,7 @@ jobs:
           node-version: 18
           cache: npm
 
-      - name: Instalar dependências
+      - name: Instalar dependências do backend
         run: npm ci
 
       - name: Aguardar MongoDB
@@ -49,13 +49,40 @@ jobs:
           MONGO_URI_TEST: mongodb://localhost:27017/blogdb_test
         run: npm run test:coverage
 
-  docker-build:
+  frontend-build:
     runs-on: ubuntu-latest
-    needs: tests
 
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
 
-      - name: Build da imagem Docker
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependências do frontend
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build do frontend
+        working-directory: ./frontend
+        env:
+          VITE_API_URL: http://localhost:3000
+        run: npm run build
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-build]
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Build da imagem Docker do backend
         run: docker build -t challenge-backend:ci .
+
+      - name: Build da imagem Docker do frontend
+        run: docker build -t challenge-frontend:ci ./frontend

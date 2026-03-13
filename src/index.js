@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 const connectMongo = require('./database/mongo');
 const Post = require('./models/Post');
 
@@ -15,6 +16,10 @@ app.use((req, res, next) => {
     console.log(`Método: ${req.method} - URL: ${req.url} !`);
     next();
 });
+
+app.use(cors({
+    origin: 'http://localhost:5173'
+}));
 
 app.use(bodyParser.json());
 
